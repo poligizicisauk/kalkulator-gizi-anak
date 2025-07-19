@@ -2,35 +2,148 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Kalkulator Status Gizi Anak</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kalkulator Gizi Anak</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #fffaf5;
+      color: #333;
+      margin: 0;
+      padding: 1rem;
+    }
+    h1, h2 {
+      color: #f57c00;
+      text-align: center;
+    }
+    form {
+      max-width: 500px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 1rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    label, input, select {
+      display: block;
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+    input, select {
+      padding: 0.5rem;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #f57c00;
+      color: white;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 5px;
+      width: 100%;
+      font-size: 1rem;
+    }
+    #hasil {
+      max-width: 700px;
+      margin: 2rem auto;
+      background: #fff;
+      padding: 1rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    canvas {
+      max-width: 100%;
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Kalkulator Status Gizi Anak</h1>
-    <label>Nama Anak: <input type="text" id="nama" /></label><br>
-    <label>Usia (bulan): <input type="number" id="usia" min="0" max="60"/></label><br>
-    <label>Berat Badan (kg): <input type="number" step="0.1" id="bb" /></label><br>
-    <label>Tinggi Badan (cm): <input type="number" step="0.1" id="tb" /></label><br>
-    <label>Jenis Kelamin:</label>
-    <label><input type="radio" name="jk" value="L" checked/> Laki-laki</label>
-    <label><input type="radio" name="jk" value="P" /> Perempuan</label><br>
-    <button onclick="hitungGizi()">Hitung</button>
-    <button onclick="unduhPDF()">Unduh PDF</button>
+  <h1>Kalkulator Status Gizi Anak</h1>
+  <form id="formGizi">
+    <label for="jenisKelamin">Jenis Kelamin:</label>
+    <select id="jenisKelamin" required>
+      <option value="">-- Pilih --</option>
+      <option value="L">Laki-laki</option>
+      <option value="P">Perempuan</option>
+    </select>
+    <label for="usia">Usia (bulan):</label>
+    <input type="number" id="usia" min="0" max="60" required />
+    <label for="bb">Berat Badan (kg):</label>
+    <input type="number" id="bb" step="0.1" min="1" required />
+    <label for="tb">Tinggi Badan (cm):</label>
+    <input type="number" id="tb" step="0.1" min="30" required />
+    <button type="submit">Hitung Status Gizi</button>
+  </form>
 
-    <div id="hasil" class="hasil"></div>
-    <div id="saran" class="saran"></div>
+  <div id="hasil"></div>
 
-    <canvas id="chartBBU"></canvas>
-    <canvas id="chartTBU"></canvas>
-    <canvas id="chartBBTB"></canvas>
-  </div>
+  <script>
+    document.getElementById('formGizi').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const jk = document.getElementById('jenisKelamin').value;
+      const usia = parseInt(document.getElementById('usia').value);
+      const bb = parseFloat(document.getElementById('bb').value);
+      const tb = parseFloat(document.getElementById('tb').value);
 
-  <script src="zscore.js"></script>
-  <script src="script.js"></script>
+      let hasil = '<h2>Hasil Status Gizi</h2>';
+
+      // Simulasi Z-score sementara
+      const zBBU = (bb - 9.0) / 1.2;
+      const zTBU = (tb - 85) / 3.5;
+      const zBBTB = (bb / tb * 100 - 13.5) / 1.2;
+
+      const klasifikasi = (z, jenis) => {
+        if (jenis === 'BBU') {
+          if (z < -3) return 'Gizi Buruk';
+          else if (z < -2) return 'Gizi Kurang';
+          else if (z <= 2) return 'Gizi Baik';
+          else return 'Risiko Gizi Lebih';
+        }
+        if (jenis === 'TBU') {
+          if (z < -3) return 'Sangat Pendek';
+          else if (z < -2) return 'Pendek';
+          else if (z <= 2) return 'Normal';
+          else return 'Tinggi';
+        }
+        if (jenis === 'BBTB') {
+          if (z < -3) return 'Sangat Kurus';
+          else if (z < -2) return 'Kurus';
+          else if (z <= 2) return 'Normal';
+          else return 'Gemuk';
+        }
+      };
+
+      const saran = (kategori, jenis) => {
+        if (jenis === 'BBU') {
+          if (kategori === 'Gizi Buruk') return 'Segera bawa anak ke layanan kesehatan untuk penanganan gizi buruk.';
+          if (kategori === 'Gizi Kurang') return 'Perhatikan asupan gizi anak dan pantau pertumbuhannya secara rutin.';
+          if (kategori === 'Gizi Baik') return 'Pertahankan pola makan sehat dan seimbang untuk anak.';
+          if (kategori === 'Risiko Gizi Lebih') return 'Pantau berat badan anak dan konsultasikan ke tenaga kesehatan.';
+        }
+        if (jenis === 'TBU') {
+          if (kategori === 'Sangat Pendek') return 'Konsultasikan ke dokter anak untuk evaluasi pertumbuhan dan penyebab stunting.';
+          if (kategori === 'Pendek') return 'Pastikan anak mendapat makanan bergizi dan stimulasi tumbuh kembang.';
+          if (kategori === 'Normal') return 'Pertumbuhan tinggi badan anak berada dalam rentang normal.';
+          if (kategori === 'Tinggi') return 'Tinggi badan anak baik, teruskan pola asuh dan gizi yang baik.';
+        }
+        if (jenis === 'BBTB') {
+          if (kategori === 'Sangat Kurus') return 'Anak kekurangan berat badan, perlu evaluasi pola makan dan kondisi medis.';
+          if (kategori === 'Kurus') return 'Asupan makanan harus ditingkatkan dengan kandungan gizi yang cukup.';
+          if (kategori === 'Normal') return 'Status gizi anak normal. Pertahankan pola makan sehat.';
+          if (kategori === 'Gemuk') return 'Waspadai kelebihan berat badan. Kurangi makanan tinggi gula dan lemak.';
+        }
+      };
+
+      const hasilBBU = klasifikasi(zBBU, 'BBU');
+      const hasilTBU = klasifikasi(zTBU, 'TBU');
+      const hasilBBTB = klasifikasi(zBBTB, 'BBTB');
+
+      hasil += `<p><strong>BB/U:</strong> ${hasilBBU}<br /><em>Saran:</em> ${saran(hasilBBU, 'BBU')}</p>`;
+      hasil += `<p><strong>TB/U:</strong> ${hasilTBU}<br /><em>Saran:</em> ${saran(hasilTBU, 'TBU')}</p>`;
+      hasil += `<p><strong>BB/TB:</strong> ${hasilBBTB}<br /><em>Saran:</em> ${saran(hasilBBTB, 'BBTB')}</p>`;
+
+      document.getElementById('hasil').innerHTML = hasil;
+    });
+  </script>
 </body>
 </html>
