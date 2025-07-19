@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kalkulator Gizi Anak</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #fff8f0;
+      color: #333;
+      padding: 20px;
+    }
+    h1 {
+      color: #e67e22;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    input, select {
+      padding: 5px;
+      margin-top: 5px;
+    }
+    .result {
+      background-color: #ffe0b2;
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 5px;
+    }
+    button {
+      background-color: #e67e22;
+      color: white;
+      padding: 10px;
+      border: none;
+      margin-top: 15px;
+      cursor: pointer;
+    }
+    canvas {
+      margin-top: 20px;
+      max-width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <h1>Kalkulator Gizi Anak</h1>
+  <form id="formGizi">
+    <label>Jenis Kelamin:
+      <select id="gender">
+        <option value="P">Perempuan</option>
+        <option value="L">Laki-laki</option>
+      </select>
+    </label>
+    <label>Usia (bulan): <input type="number" id="usia" min="0" max="60"></label>
+    <label>Berat Badan (kg): <input type="number" id="bb" step="0.1"></label>
+    <label>Tinggi Badan (cm): <input type="number" id="tb" step="0.1"></label>
+    <button type="submit">Hitung Status Gizi</button>
+  </form>
+
+  <div class="result" id="hasil" style="display:none">
+    <h2>Hasil Perhitungan</h2>
+    <div id="statusGizi"></div>
+    <button onclick="window.print()">Unduh PDF</button>
+  </div>
+
+  <canvas id="grafikBBU"></canvas>
+  <canvas id="grafikTBU"></canvas>
+  <canvas id="grafikBBTB"></canvas>
+
+  <script>
+    const dataBBU = {
+      P: {
+        0: { median: 3.2, sdMin2: 2.4, sdMin3: 2.0 },
+        1: { median: 4.2, sdMin2: 3.2, sdMin3: 2.7 },
+        2: { median: 5.1, sdMin2: 3.9, sdMin3: 3.4 },
+        3: { median: 5.8, sdMin2: 4.5, sdMin3: 4.0 },
+        6: { median: 7.3, sdMin2: 5.7, sdMin3: 5.1 },
+        12: { median: 8.9, sdMin2: 7.0, sdMin3: 6.2 },
+        24: { median: 10.3, sdMin2: 8.6, sdMin3: 7.7 },
+        60: { median: 16.8, sdMin2: 13.9, sdMin3: 12.5 }
+      },
+      L: {
+        0: { median: 3.3, sdMin2: 2.5, sdMin3: 2.1 },
+        1: { median: 4.5, sdMin2: 3.4, sdMin3: 2.9 },
+        2: { median: 5.6, sdMin2: 4.5, sdMin3: 3.9 },
+        3: { median: 6.4, sdMin2: 5.2, sdMin3: 4.5 },
+        6: { median: 8.0, sdMin2: 6.4, sdMin3: 5.7 },
+        12: { median: 9.6, sdMin2: 7.7, sdMin3: 6.9 },
+        24: { median: 12.2, sdMin2: 10.1, sdMin3: 9.0 },
+        60: { median: 18.3, sdMin2: 15.5, sdMin3: 13.8 }
+      }
+    };
+
+    const dataTBU = {
+      P: {
+        0: { median: 49.1, sdMin2: 46.1, sdMin3: 44.2 },
+        1: { median: 53.7, sdMin2: 50.8, sdMin3: 48.9 },
+        2: { median: 57.1, sdMin2: 54.4, sdMin3: 52.4 },
+        3: { median: 59.8, sdMin2: 57.3, sdMin3: 55.3 },
+        6: { median: 65.7, sdMin2: 63.3, sdMin3: 61.2 },
+        12: { median: 74.0, sdMin2: 70.6, sdMin3: 68.0 },
+        24: { median: 85.1, sdMin2: 81.0, sdMin3: 78.0 },
+        60: { median: 110.0, sdMin2: 105.0, sdMin3: 100.0 }
+      },
+      L: {
+        0: { median: 49.9, sdMin2: 46.9, sdMin3: 44.9 },
+        1: { median: 54.7, sdMin2: 51.8, sdMin3: 49.8 },
+        2: { median: 58.4, sdMin2: 55.0, sdMin3: 53.0 },
+        3: { median: 61.4, sdMin2: 58.0, sdMin3: 56.0 },
+        6: { median: 67.6, sdMin2: 64.5, sdMin3: 62.3 },
+        12: { median: 76.1, sdMin2: 72.5, sdMin3: 69.0 },
+        24: { median: 87.8, sdMin2: 83.2, sdMin3: 79.2 },
+        60: { median: 111.2, sdMin2: 106.5, sdMin3: 101.0 }
+      }
+    };
+
+    function getZScoreStatusBBTB(bb, tb) {
+      const bbPerCm = bb / (tb / 100);
+      if (bbPerCm < 0.11) return "Gizi Buruk";
+      if (bbPerCm < 0.12) return "Gizi Kurang";
+      if (bbPerCm <= 0.15) return "Normal";
+      if (bbPerCm <= 0.16) return "Risiko Gizi Lebih";
+      if (bbPerCm <= 0.18) return "Gizi Lebih";
+      return "Obesitas";
+    }
+
+    function getZScoreStatusBBU(jk, usia, bb) {
+      const standar = dataBBU[jk][usia];
+      if (!standar) return 'Data tidak tersedia';
+      if (bb < standar.sdMin3) return 'Sangat Kurang';
+      if (bb >= standar.sdMin3 && bb < standar.sdMin2) return 'Kurang';
+      if (bb >= standar.sdMin2 && bb <= standar.median) return 'Normal';
+      return 'Risiko Berat Badan Lebih';
+    }
+
+    function getZScoreStatusTBU(jk, usia, tb) {
+      const standar = dataTBU[jk][usia];
+      if (!standar) return 'Data tidak tersedia';
+      if (tb < standar.sdMin3) return 'Sangat Pendek';
+      if (tb >= standar.sdMin3 && tb < standar.sdMin2) return 'Pendek';
+      return 'Normal';
+    }
+
+    document.getElementById('formGizi').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const gender = document.getElementById('gender').value;
+      const usia = parseInt(document.getElementById('usia').value);
+      const bb = parseFloat(document.getElementById('bb').value);
+      const tb = parseFloat(document.getElementById('tb').value);
+
+      const statusBBU = getZScoreStatusBBU(gender, usia, bb);
+      const statusTBU = getZScoreStatusTBU(gender, usia, tb);
+      const statusBBTB = getZScoreStatusBBTB(bb, tb);
+
+      let saran = `<p><strong>Status BB/U:</strong> ${statusBBU}</p>`;
+      saran += `<p><strong>Status TB/U:</strong> ${statusTBU}</p>`;
+      saran += `<p><strong>Status BB/TB:</strong> ${statusBBTB}</p>`;
+
+      saran += `<h3>Saran:</h3><ul>`;
+      if (statusBBU === "Sangat Kurang" || statusBBTB === "Gizi Buruk") {
+        saran += `<li>Segera konsultasi ke ahli gizi atau fasilitas kesehatan terdekat.</li>`;
+        saran += `<li>Berikan makanan tinggi energi dan protein.</li>`;
+      } else if (statusBBU === "Kurang" || statusBBTB === "Gizi Kurang") {
+        saran += `<li>Perbaiki pola makan dan beri makanan bergizi lengkap.</li>`;
+      }
+      if (statusTBU === "Pendek" || statusTBU === "Sangat Pendek") {
+        saran += `<li>Pastikan anak tidak kekurangan zat gizi kronis (protein, seng, zat besi).</li>`;
+      }
+      saran += `</ul>`;
+
+      document.getElementById('hasil').style.display = 'block';
+      document.getElementById('statusGizi').innerHTML = saran;
+
+      tampilkanGrafik(gender, usia, bb, tb, statusBBTB);
+    });
+
+    function tampilkanGrafik(jk, usia, bb, tb, statusBBTB) {
+      const usiaKeys = Object.keys(dataBBU[jk]);
+
+      new Chart(document.getElementById('grafikBBU'), {
+        type: 'line',
+        data: {
+          labels: usiaKeys,
+          datasets: [
+            {
+              label: 'Median BB/U',
+              borderColor: 'green',
+              data: usiaKeys.map(u => dataBBU[jk][u].median),
+              fill: false
+            },
+            {
+              label: 'Anak Anda (BB)',
+              borderColor: 'blue',
+              data: usiaKeys.map(u => parseInt(u) === usia ? bb : null),
+              borderWidth: 0,
+              pointRadius: 6,
+              pointBackgroundColor: 'blue',
+              showLine: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: 'bottom' } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+
+      new Chart(document.getElementById('grafikTBU'), {
+        type: 'line',
+        data: {
+          labels: usiaKeys,
+          datasets: [
+            {
+              label: 'Median TB/U',
+              borderColor: 'orange',
+              data: usiaKeys.map(u => dataTBU[jk][u].median),
+              fill: false
+            },
+            {
+              label: 'Anak Anda (TB)',
+              borderColor: 'red',
+              data: usiaKeys.map(u => parseInt(u) === usia ? tb : null),
+              borderWidth: 0,
+              pointRadius: 6,
+              pointBackgroundColor: 'red',
+              showLine: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: 'bottom' } },
+          scales: { y: { beginAtZero: false } }
+        }
+      });
+
+      new Chart(document.getElementById('grafikBBTB'), {
+        type: 'bar',
+        data: {
+          labels: ['Gizi Buruk', 'Gizi Kurang', 'Normal', 'Risiko Gizi Lebih', 'Gizi Lebih', 'Obesitas'],
+          datasets: [
+            {
+              label: 'Status BB/TB Anak',
+              data: [
+                statusBBTB === 'Gizi Buruk' ? 1 : 0,
+                statusBBTB === 'Gizi Kurang' ? 1 : 0,
+                statusBBTB === 'Normal' ? 1 : 0,
+                statusBBTB === 'Risiko Gizi Lebih' ? 1 : 0,
+                statusBBTB === 'Gizi Lebih' ? 1 : 0,
+                statusBBTB === 'Obesitas' ? 1 : 0
+              ],
+              backgroundColor: '#f39c12'
+            }
+          ]
+        },
+        options: {
+          indexAxis: 'y',
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: false }
+          },
+          scales: {
+            x: { beginAtZero: true, max: 1 }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
