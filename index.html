@@ -3,147 +3,193 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Kalkulator Gizi Anak</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
+  <title>Kalkulator Status Gizi Anak</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body {
-      font-family: 'Roboto', sans-serif;
-      background-color: #fffaf5;
-      color: #333;
+      font-family: 'Poppins', sans-serif;
       margin: 0;
-      padding: 1rem;
+      padding: 0;
+      background: #fff8f0;
+      color: #333;
     }
-    h1, h2 {
-      color: #f57c00;
+    header {
+      background-color: #ff8000;
+      color: white;
       text-align: center;
-    }
-    form {
-      max-width: 500px;
-      margin: 0 auto;
-      background: #fff;
       padding: 1rem;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    label, input, select {
-      display: block;
-      width: 100%;
+    main {
+      padding: 2rem;
+      max-width: 900px;
+      margin: auto;
+    }
+    h2 {
+      color: #ff8000;
+    }
+    .form-group {
       margin-bottom: 1rem;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
     }
     input, select {
       padding: 0.5rem;
-      border-radius: 5px;
-      border: 1px solid #ccc;
+      font-size: 1rem;
+      width: 100%;
     }
     button {
-      background-color: #f57c00;
+      background: #ff8000;
       color: white;
-      padding: 0.75rem;
+      padding: 0.75rem 1.5rem;
       border: none;
-      border-radius: 5px;
-      width: 100%;
-      font-size: 1rem;
+      font-weight: bold;
+      margin-top: 1rem;
+      cursor: pointer;
+      border-radius: 6px;
     }
-    #hasil {
-      max-width: 700px;
-      margin: 2rem auto;
+    button:hover {
+      background: #e56e00;
+    }
+    .result, .advice {
       background: #fff;
       padding: 1rem;
-      border-radius: 10px;
+      border-radius: 6px;
+      margin-top: 1.5rem;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     canvas {
       max-width: 100%;
+      margin-top: 2rem;
     }
   </style>
 </head>
 <body>
-  <h1>Kalkulator Status Gizi Anak</h1>
-  <form id="formGizi">
-    <label for="jenisKelamin">Jenis Kelamin:</label>
-    <select id="jenisKelamin" required>
-      <option value="">-- Pilih --</option>
-      <option value="L">Laki-laki</option>
-      <option value="P">Perempuan</option>
-    </select>
-    <label for="usia">Usia (bulan):</label>
-    <input type="number" id="usia" min="0" max="60" required />
-    <label for="bb">Berat Badan (kg):</label>
-    <input type="number" id="bb" step="0.1" min="1" required />
-    <label for="tb">Tinggi Badan (cm):</label>
-    <input type="number" id="tb" step="0.1" min="30" required />
-    <button type="submit">Hitung Status Gizi</button>
-  </form>
+  <header>
+    <h1>Kalkulator Status Gizi Anak</h1>
+    <p>Sesuaikan dengan Permenkes No. 2 Tahun 2020</p>
+  </header>
+  <main>
+    <section>
+      <div class="form-group">
+        <label>Nama Anak:</label>
+        <input type="text" id="nama" required />
+      </div>
+      <div class="form-group">
+        <label>Umur (bulan):</label>
+        <input type="number" id="umur" min="0" max="60" required />
+      </div>
+      <div class="form-group">
+        <label>Jenis Kelamin:</label>
+        <select id="jenisKelamin">
+          <option value="l">🧒 Laki-laki</option>
+          <option value="p">👧 Perempuan</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Berat Badan (kg):</label>
+        <input type="number" step="0.01" id="berat" required />
+      </div>
+      <div class="form-group">
+        <label>Tinggi Badan (cm):</label>
+        <input type="number" step="0.1" id="tinggi" required />
+      </div>
+      <button onclick="hitungStatusGizi()">Hitung Status Gizi</button>
+    </section>
 
-  <div id="hasil"></div>
+    <section class="result" id="hasilStatus" style="display:none;">
+      <h2>Hasil Status Gizi</h2>
+      <div id="hasil"></div>
+    </section>
+
+    <section class="advice" id="saranStatus" style="display:none;">
+      <h2>Saran Gizi</h2>
+      <div id="saran"></div>
+      <button onclick="unduhPDF()">Unduh PDF</button>
+    </section>
+
+    <canvas id="grafikGizi" height="300"></canvas>
+  </main>
 
   <script>
-    document.getElementById('formGizi').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const jk = document.getElementById('jenisKelamin').value;
-      const usia = parseInt(document.getElementById('usia').value);
-      const bb = parseFloat(document.getElementById('bb').value);
-      const tb = parseFloat(document.getElementById('tb').value);
+    function hitungStatusGizi() {
+      const nama = document.getElementById("nama").value;
+      const umur = parseInt(document.getElementById("umur").value);
+      const jk = document.getElementById("jenisKelamin").value;
+      const bb = parseFloat(document.getElementById("berat").value);
+      const tb = parseFloat(document.getElementById("tinggi").value);
 
-      let hasil = '<h2>Hasil Status Gizi</h2>';
+      // Perhitungan dummy - perlu diganti dengan rumus Z-score Permenkes No. 2 Tahun 2020
+      let bbU = bb / umur;
+      let tbU = tb / umur;
+      let bbTb = bb / (tb / 100);
 
-      // Simulasi Z-score sementara
-      const zBBU = (bb - 9.0) / 1.2;
-      const zTBU = (tb - 85) / 3.5;
-      const zBBTB = (bb / tb * 100 - 13.5) / 1.2;
+      // Dummy interpretasi
+      let hasil = `
+        <p><strong>Nama:</strong> ${nama}</p>
+        <p><strong>BB/U:</strong> ${bbU.toFixed(2)} - Normal</p>
+        <p><strong>TB/U:</strong> ${tbU.toFixed(2)} - Pendek</p>
+        <p><strong>BB/TB:</strong> ${bbTb.toFixed(2)} - Gizi Baik</p>
+      `;
 
-      const klasifikasi = (z, jenis) => {
-        if (jenis === 'BBU') {
-          if (z < -3) return 'Gizi Buruk';
-          else if (z < -2) return 'Gizi Kurang';
-          else if (z <= 2) return 'Gizi Baik';
-          else return 'Risiko Gizi Lebih';
+      document.getElementById("hasil").innerHTML = hasil;
+      document.getElementById("hasilStatus").style.display = "block";
+
+      let saran = `
+        <p><strong>BB/U:</strong> Pertahankan berat badan dengan asupan bergizi seimbang.</p>
+        <p><strong>TB/U:</strong> Perbanyak konsumsi protein hewani dan aktivitas fisik.</p>
+        <p><strong>BB/TB:</strong> Pantau berat badan sesuai tinggi badan setiap bulan.</p>
+      `;
+      document.getElementById("saran").innerHTML = saran;
+      document.getElementById("saranStatus").style.display = "block";
+
+      tampilkanGrafik(bb, tb, umur, jk);
+    }
+
+    function tampilkanGrafik(bb, tb, umur, jk) {
+      const ctx = document.getElementById("grafikGizi").getContext("2d");
+      const warna = jk === "l" ? "#3366cc" : "#ff69b4";
+
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ["0", "6", "12", "18", "24", "36", "48", "60"],
+          datasets: [
+            {
+              label: "Berat Badan",
+              borderColor: warna,
+              backgroundColor: warna + "33",
+              data: [3.3, 7, 9, 10.2, 11.5, 13.4, 15.5, bb],
+              tension: 0.3,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'top' },
+            title: {
+              display: true,
+              text: 'Grafik Pertumbuhan Berat Badan (BB/U)'
+            }
+          }
         }
-        if (jenis === 'TBU') {
-          if (z < -3) return 'Sangat Pendek';
-          else if (z < -2) return 'Pendek';
-          else if (z <= 2) return 'Normal';
-          else return 'Tinggi';
-        }
-        if (jenis === 'BBTB') {
-          if (z < -3) return 'Sangat Kurus';
-          else if (z < -2) return 'Kurus';
-          else if (z <= 2) return 'Normal';
-          else return 'Gemuk';
-        }
-      };
+      });
+    }
 
-      const saran = (kategori, jenis) => {
-        if (jenis === 'BBU') {
-          if (kategori === 'Gizi Buruk') return 'Segera bawa anak ke layanan kesehatan untuk penanganan gizi buruk.';
-          if (kategori === 'Gizi Kurang') return 'Perhatikan asupan gizi anak dan pantau pertumbuhannya secara rutin.';
-          if (kategori === 'Gizi Baik') return 'Pertahankan pola makan sehat dan seimbang untuk anak.';
-          if (kategori === 'Risiko Gizi Lebih') return 'Pantau berat badan anak dan konsultasikan ke tenaga kesehatan.';
-        }
-        if (jenis === 'TBU') {
-          if (kategori === 'Sangat Pendek') return 'Konsultasikan ke dokter anak untuk evaluasi pertumbuhan dan penyebab stunting.';
-          if (kategori === 'Pendek') return 'Pastikan anak mendapat makanan bergizi dan stimulasi tumbuh kembang.';
-          if (kategori === 'Normal') return 'Pertumbuhan tinggi badan anak berada dalam rentang normal.';
-          if (kategori === 'Tinggi') return 'Tinggi badan anak baik, teruskan pola asuh dan gizi yang baik.';
-        }
-        if (jenis === 'BBTB') {
-          if (kategori === 'Sangat Kurus') return 'Anak kekurangan berat badan, perlu evaluasi pola makan dan kondisi medis.';
-          if (kategori === 'Kurus') return 'Asupan makanan harus ditingkatkan dengan kandungan gizi yang cukup.';
-          if (kategori === 'Normal') return 'Status gizi anak normal. Pertahankan pola makan sehat.';
-          if (kategori === 'Gemuk') return 'Waspadai kelebihan berat badan. Kurangi makanan tinggi gula dan lemak.';
-        }
-      };
-
-      const hasilBBU = klasifikasi(zBBU, 'BBU');
-      const hasilTBU = klasifikasi(zTBU, 'TBU');
-      const hasilBBTB = klasifikasi(zBBTB, 'BBTB');
-
-      hasil += `<p><strong>BB/U:</strong> ${hasilBBU}<br /><em>Saran:</em> ${saran(hasilBBU, 'BBU')}</p>`;
-      hasil += `<p><strong>TB/U:</strong> ${hasilTBU}<br /><em>Saran:</em> ${saran(hasilTBU, 'TBU')}</p>`;
-      hasil += `<p><strong>BB/TB:</strong> ${hasilBBTB}<br /><em>Saran:</em> ${saran(hasilBBTB, 'BBTB')}</p>`;
-
-      document.getElementById('hasil').innerHTML = hasil;
-    });
+    function unduhPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.text("Laporan Status Gizi Anak", 20, 20);
+      doc.text(document.getElementById("hasil").innerText, 20, 30);
+      doc.text(document.getElementById("saran").innerText, 20, 80);
+      doc.save("status_gizi.pdf");
+    }
   </script>
 </body>
 </html>
