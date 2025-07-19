@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kalkulator Status Gizi Anak</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Kalkulator Status Gizi Anak</h1>
+    <label>Nama Anak: <input type="text" id="nama" /></label><br>
+    <label>Usia (bulan): <input type="number" id="usia" min="0" max="60"/></label><br>
+    <label>Berat Badan (kg): <input type="number" step="0.1" id="bb" /></label><br>
+    <label>Tinggi Badan (cm): <input type="number" step="0.1" id="tb" /></label><br>
+    <label>Jenis Kelamin:</label>
+    <label><input type="radio" name="jk" value="L" checked/> Laki-laki</label>
+    <label><input type="radio" name="jk" value="P" /> Perempuan</label><br>
+    <button onclick="hitungGizi()">Hitung</button>
+    <button onclick="unduhPDF()">Unduh PDF</button>
+
+    <div id="hasil" class="hasil"></div>
+    <div id="saran" class="saran"></div>
+
+    <canvas id="chartBBU"></canvas>
+    <canvas id="chartTBU"></canvas>
+    <canvas id="chartBBTB"></canvas>
+  </div>
+
+  <script src="zscore.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

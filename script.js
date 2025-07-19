@@ -1,0 +1,1 @@
+// isi script.js akan dimasukkan di tahap berikutnya
