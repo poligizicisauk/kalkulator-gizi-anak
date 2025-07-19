@@ -2,105 +2,498 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Kalkulator Gizi Anak</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+  $1
+    function unduhPDF() {
+  document.getElementById("namaCetak").innerText = document.getElementById("nama").value;
+  document.getElementById("tanggalCetak").innerText = new Date().toLocaleDateString('id-ID', {
+    day: 'numeric', month: 'long', year: 'numeric'
+  });
+  const element = document.getElementById("output");
+  html2pdf().from(element).save("hasil-status-gizi.pdf");
+}function renderIdealChart(tb, bb, jk) {
+  const data = jk === "perempuan" ? dataBBTB_P : dataBBTB_L;
+  const labels = data.map(d => d.tb);
+  const median = data.map(d => d.median);
+  const minus2SD = data.map(d => d.minus2SD);
+  const plus1SD = data.map(d => d.plus1SD);
+  const nilaiAnak = data.map(d => d.tb === tb ? bb : null);
+
+  new Chart(document.getElementById("chartIdeal"), {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "-2 SD",
+          data: minus2SD,
+          borderColor: "red",
+          fill: false
+        },
+        {
+          label: "Median",
+          data: median,
+          borderColor: "green",
+          fill: false
+        },
+        {
+          label: "+1 SD",
+          data: plus1SD,
+          borderColor: "orange",
+          fill: false
+        },
+        {
+          label: "Anak Anda",
+          data: nilaiAnak,
+          borderColor: "blue",
+          backgroundColor: "blue",
+          pointRadius: 5,
+          fill: false,
+          showLine: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: true,
+          position: "bottom"
+        }
+      }
+    }
+  });
+}
+
+$1
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
       background-color: #fff8f0;
-      color: #333;
+      font-family: Arial, sans-serif;
+    }
+    .form-section {
+      background-color: #ffe5b4;
       padding: 20px;
+      border-radius: 10px;
     }
-    h1 {
-      color: #e67e22;
+    .result-section {
+      background-color: #a9db37;
+      padding: 20px;
+      margin-top: 20px;
+      border-radius: 10px;
+      color: #000;
     }
-    label {
-      display: block;
-      margin-top: 10px;
-    }
-    input, select {
-      padding: 5px;
-      margin-top: 5px;
-    }
-    .result {
-      background-color: #ffe0b2;
+    .chart-container {
+      margin-top: 20px;
+      background-color: #fff;
+      border-radius: 10px;
       padding: 15px;
-      margin-top: 20px;
-      border-radius: 5px;
     }
-    button {
-      background-color: #e67e22;
+    .btn-orange {
+      background-color: #ff7f00;
       color: white;
-      padding: 10px;
       border: none;
-      margin-top: 15px;
-      cursor: pointer;
-    }
-    canvas {
-      margin-top: 20px;
-      max-width: 100%;
     }
   </style>
 </head>
-<body>
-  <h1>Kalkulator Gizi Anak</h1>
-  <form id="formGizi">
-    <label>Nama Anak: <input type="text" id="nama"></label>
-    <label>Jenis Kelamin:
-      <select id="gender">
-        <option value="P">Perempuan</option>
-        <option value="L">Laki-laki</option>
-      </select>
-    </label>
-    <label>Usia (bulan): <input type="number" id="usia" min="0" max="60"></label>
-    <label>Berat Badan (kg): <input type="number" id="bb" step="0.1"></label>
-    <label>Tinggi Badan (cm): <input type="number" id="tb" step="0.1"></label>
-    <button type="submit">Hitung Status Gizi</button>
-  </form>
+<body class="container py-5">
+  <h1 class="text-center mb-4 text-warning">Kalkulator Status Gizi Anak</h1>
 
-  <div class="result" id="hasil" style="display:none">
-    <h2>Hasil Perhitungan</h2>
-    <div id="dataAnak"></div>
-    <div id="statusGizi"></div>
-    <div id="grafikContainer">
-      <canvas id="grafikBBU"></canvas>
-      <canvas id="grafikTBU"></canvas>
-      <canvas id="grafikBBTB"></canvas>
+  <div class="form-section">
+    <form id="formGizi">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label>Nama Anak</label>
+          <input type="text" class="form-control" id="nama" required>
+        </div>
+        <div class="col-md-6">
+          <label>Usia (bulan)</label>
+          <input type="number" class="form-control" id="usia" required>
+        </div>
+        <div class="col-md-6">
+          <label>Jenis Kelamin</label>
+          <select class="form-control" id="jenisKelamin">
+            <option value="laki-laki">Laki-laki</option>
+            <option value="perempuan">Perempuan</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label>Berat Badan (kg)</label>
+          <input type="number" step="0.1" class="form-control" id="bb" required>
+        </div>
+        <div class="col-md-6">
+          <label>Tinggi Badan (cm)</label>
+          <input type="number" step="0.1" class="form-control" id="tb" required>
+        </div>
+        <div class="col-md-12 text-center">
+          <button type="submit" class="btn btn-orange mt-3">Hitung Status Gizi</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  $1
+    <div class="chart-container">
+      <h5 class="text-center">Grafik Tinggi dan Berat Ideal</h5>
+      <canvas id="chartIdeal"></canvas>
     </div>
-    <button onclick="unduhPDF()">Unduh PDF</button>
+    <div class="chart-container">
+      <h5 class="text-center">Berat Badan Menurut Umur</h5>
+      <canvas id="chartBBU"></canvas>
+    </div>
+    <div class="text-center mb-3">
+  <strong>Tanggal Cetak:</strong> <span id="tanggalCetak"></span><br/>
+  <strong>Nama Anak:</strong> <span id="namaCetak"></span>
+</div>
+$1</div>
+    <div class="chart-container">
+      <h5 class="text-center">Tinggi Badan Menurut Umur</h5>
+      <canvas id="chartTBU"></canvas>
+    </div>
+    <div class="result-section" id="hasilTBU"></div>
+    <div class="chart-container">
+      <h5 class="text-center">Berat Badan Menurut Tinggi Badan</h5>
+      <canvas id="chartBBTB"></canvas>
+    </div>
+    <div class="result-section" id="hasilBBTB"></div>
+    <div class="text-center mt-4">
+      <button onclick="unduhPDF()" class="btn btn-success">Unduh Hasil sebagai PDF</button>
+    </div>
   </div>
 
   <script>
-    function unduhPDF() {
-      const element = document.getElementById("hasil");
-      const opt = {
-        margin: 0.5,
-        filename: 'hasil-status-gizi.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-      };
-      html2pdf().set(opt).from(element).save();
+    const dataBBU = [
+      { usia: 0, median: 3.3, minus2SD: 2.5, plus1SD: 3.9 },
+      { usia: 1, median: 4.5, minus2SD: 3.4, plus1SD: 5.1 },
+      { usia: 2, median: 5.6, minus2SD: 4.3, plus1SD: 6.3 },
+      { usia: 3, median: 6.4, minus2SD: 5.0, plus1SD: 7.2 },
+      { usia: 4, median: 7.0, minus2SD: 5.6, plus1SD: 7.8 },
+      { usia: 5, median: 7.5, minus2SD: 6.0, plus1SD: 8.4 },
+      { usia: 6, median: 7.9, minus2SD: 6.4, plus1SD: 8.8 },
+      { usia: 7, median: 8.3, minus2SD: 6.7, plus1SD: 9.2 },
+      { usia: 8, median: 8.6, minus2SD: 6.9, plus1SD: 9.6 },
+      { usia: 9, median: 8.9, minus2SD: 7.1, plus1SD: 9.9 },
+      { usia: 10, median: 9.2, minus2SD: 7.4, plus1SD: 10.2 }
+    ];
+
+    const dataTBU = [
+      { usia: 0, median: 49.9, minus2SD: 46.1, plus1SD: 53.7 },
+      { usia: 1, median: 54.7, minus2SD: 50.8, plus1SD: 58.6 },
+      { usia: 2, median: 58.4, minus2SD: 54.4, plus1SD: 62.4 },
+      { usia: 3, median: 61.4, minus2SD: 57.3, plus1SD: 65.5 },
+      { usia: 4, median: 63.9, minus2SD: 59.6, plus1SD: 68.0 },
+      { usia: 5, median: 65.9, minus2SD: 61.5, plus1SD: 70.1 },
+      { usia: 6, median: 67.6, minus2SD: 63.1, plus1SD: 71.9 },
+      { usia: 7, median: 69.2, minus2SD: 64.6, plus1SD: 73.5 },
+      { usia: 8, median: 70.6, minus2SD: 66.0, plus1SD: 75.0 },
+      { usia: 9, median: 72.0, minus2SD: 67.3, plus1SD: 76.4 },
+      { usia: 10, median: 73.3, minus2SD: 68.6, plus1SD: 77.7 }
+    ];
+
+    function getStatus(value, ref) {
+      if (!ref) return { status: "Data tidak tersedia", saran: "" };
+      const sdGap = ref.median - ref.minus2SD;
+      if (value < ref.minus2SD - sdGap) {
+        return { status: "Sangat Pendek", saran: "Perlu intervensi gizi dan stimulasi tumbuh kembang." };
+      } else if (value < ref.minus2SD) {
+        return { status: "Pendek", saran: "Pemantauan rutin dan perbaikan asupan gizi diperlukan." };
+      } else if (value <= ref.plus1SD) {
+        return { status: "Normal", saran: "Pertahankan asupan gizi dan pemantauan rutin." };
+      } else {
+        return { status: "Tinggi", saran: "Pantau pertumbuhan secara berkala untuk perkembangan optimal." };
+      }
     }
 
-    document.getElementById('formGizi').addEventListener('submit', function(e) {
+    document.getElementById("formGizi").addEventListener("submit", function(e) {
+  e.preventDefault();
+  const usiaInput = document.getElementById("usia");
+  const usia = parseInt(usiaInput.value);
+  if (usia < 0 || usia > 60) {
+    alert("Perhitungan status gizi hanya berlaku untuk anak usia 0–60 bulan.");
+    return;
+  }
       e.preventDefault();
-      const nama = document.getElementById('nama').value;
-      const gender = document.getElementById('gender').value;
-      const usia = parseInt(document.getElementById('usia').value);
-      const bb = parseFloat(document.getElementById('bb').value);
-      const tb = parseFloat(document.getElementById('tb').value);
+      const nama = document.getElementById("nama").value;
+      const usia = parseInt(document.getElementById("usia").value);
+      const jk = document.getElementById("jenisKelamin").value;
+      const bb = parseFloat(document.getElementById("bb").value);
+      const tb = parseFloat(document.getElementById("tb").value);
 
-      document.getElementById('dataAnak').innerHTML = `<p><strong>Nama Anak:</strong> ${nama}</p>
-        <p><strong>Jenis Kelamin:</strong> ${gender === 'P' ? 'Perempuan' : 'Laki-laki'}</p>
-        <p><strong>Usia:</strong> ${usia} bulan</p>
-        <p><strong>Berat Badan:</strong> ${bb} kg</p>
-        <p><strong>Tinggi Badan:</strong> ${tb} cm</p>`;
+      const hasilBBU = getStatus(bb, dataBBU.find(d => d.usia === usia));
+      const hasilTBU = getStatus(tb, dataTBU.find(d => d.usia === usia));
+      const hasilBBTB = getStatusBBTB(bb, tb);
 
-      document.getElementById('hasil').style.display = 'block';
+      document.getElementById("output").style.display = "block";
+
+      document.getElementById("hasilBBU").innerHTML = `
+        <strong>Hasil Status Gizi BB/U</strong><br/>
+        ❯ Nama: ${nama}<br/>
+        ❯ Usia: ${usia} bulan<br/>
+        ❯ Jenis Kelamin: ${jk}<br/>
+        ❯ Berat Badan: ${bb} kg<br/><br/>
+        <strong>Status:</strong> <span style="color:red">${hasilBBU.status}</span><br/>
+        <strong>Saran:</strong> ${hasilBBU.saran}
+      `;
+
+      document.getElementById("hasilTBU").innerHTML = `
+        <strong>Hasil Status Gizi TB/U</strong><br/>
+        ❯ Nama: ${nama}<br/>
+        ❯ Usia: ${usia} bulan<br/>
+        ❯ Jenis Kelamin: ${jk}<br/>
+        ❯ Tinggi Badan: ${tb} cm<br/><br/>
+        <strong>Status:</strong> <span style="color:red">${hasilTBU.status}</span><br/>
+        <strong>Saran:</strong> ${hasilTBU.saran}
+      `;
+
+      document.getElementById("hasilBBTB").innerHTML = `
+        <strong>Hasil Status Gizi BB/TB</strong><br/>
+        ❯ Nama: ${nama}<br/>
+        ❯ Usia: ${usia} bulan<br/>
+        ❯ Jenis Kelamin: ${jk}<br/>
+        ❯ Berat Badan: ${bb} kg<br/>
+        ❯ Tinggi Badan: ${tb} cm<br/><br/>
+        <strong>Status:</strong> <span style="color:red">${hasilBBTB.status}</span><br/>
+        <strong>Saran:</strong> ${hasilBBTB.saran}
+      `;
+
+      renderChart("chartBBU", usia, bb);
+      renderChart("chartTBU", usia, tb);
+      $1
+      renderIdealChart(tb, bb, jk);
     });
+
+    function renderChart(canvasId, x, y) {
+  const refData = canvasId === 'chartBBU' ? dataBBU : dataTBU;
+  const labels = refData.map(d => d.usia);
+  const minus2SD = refData.map(d => d.minus2SD);
+  const median = refData.map(d => d.median);
+  const plus1SD = refData.map(d => d.plus1SD);
+  const nilaiAnak = refData.map((d, i) => i === x ? y : null);
+
+  new Chart(document.getElementById(canvasId), {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "-2 SD",
+          data: minus2SD,
+          borderColor: "red",
+          fill: false
+        },
+        {
+          label: "Median",
+          data: median,
+          borderColor: "green",
+          fill: false
+        },
+        {
+          label: "+1 SD",
+          data: plus1SD,
+          borderColor: "orange",
+          fill: false
+        },
+        {
+          label: "Anak Anda",
+          data: nilaiAnak,
+          borderColor: "blue",
+          backgroundColor: "blue",
+          pointRadius: 5,
+          fill: false,
+          showLine: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: true,
+          position: "bottom"
+        }
+      }
+    }
+  });
+}, (_, i) => i),
+      datasets: [
+        {
+          label: "Anak Anda",
+          data: Array(25).fill(null).map((_, i) => i === x ? y : null),
+          borderColor: "blue",
+          backgroundColor: "blue",
+          pointRadius: 5,
+          showLine: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: true, position: "bottom" }
+      }
+    }
+  });
+}
+
+function renderChartBBTB(tb, bb, jk) {
+  const data = jk === "perempuan" ? dataBBTB_P : dataBBTB_L;
+  const labels = data.map(d => d.tb);
+  const minus2SD = data.map(d => d.minus2SD);
+  const median = data.map(d => d.median);
+  const plus1SD = data.map(d => d.plus1SD);
+  const nilaiAnak = data.map(d => d.tb === tb ? bb : null);
+
+  new Chart(document.getElementById("chartBBTB"), {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "-2 SD",
+          data: minus2SD,
+          borderColor: "red",
+          fill: false
+        },
+        {
+          label: "Median",
+          data: median,
+          borderColor: "green",
+          fill: false
+        },
+        {
+          label: "+1 SD",
+          data: plus1SD,
+          borderColor: "orange",
+          fill: false
+        },
+        {
+          label: "Anak Anda",
+          data: nilaiAnak,
+          borderColor: "blue",
+          backgroundColor: "blue",
+          pointRadius: 5,
+          fill: false,
+          showLine: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: true,
+          position: "bottom"
+        }
+      }
+    }
+  });
+}, (_, i) => i),
+          datasets: [
+            {
+              label: "Anak Anda",
+              data: Array(25).fill(null).map((_, i) => i === x ? y : null),
+              borderColor: "blue",
+              backgroundColor: "blue",
+              pointRadius: 5,
+              showLine: false
+            },
+            {
+              label: "-2 SD", borderColor: "red", data: Array(25).fill(y - 2)
+            },
+            {
+              label: "Median", borderColor: "green", data: Array(25).fill(y)
+            },
+            {
+              label: "+1 SD", borderColor: "orange", data: Array(25).fill(y + 1)
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: true, position: "bottom" }
+          }
+        }
+      });
+    }
+
+    function getStatusBBTB(bb, tb) {
+      const dataBBTB_L = [
+  { tb: 65, median: 7.0, minus2SD: 5.7, plus1SD: 8.0 },
+  { tb: 66, median: 7.2, minus2SD: 5.8, plus1SD: 8.2 },
+  { tb: 67, median: 7.4, minus2SD: 6.0, plus1SD: 8.4 },
+  { tb: 68, median: 7.6, minus2SD: 6.1, plus1SD: 8.6 },
+  { tb: 69, median: 7.8, minus2SD: 6.2, plus1SD: 8.8 },
+  { tb: 70, median: 8.0, minus2SD: 6.3, plus1SD: 9.0 },
+  { tb: 71, median: 8.2, minus2SD: 6.5, plus1SD: 9.2 },
+  { tb: 72, median: 8.4, minus2SD: 6.6, plus1SD: 9.4 },
+  { tb: 73, median: 8.6, minus2SD: 6.8, plus1SD: 9.6 },
+  { tb: 74, median: 8.8, minus2SD: 6.9, plus1SD: 9.8 },
+  { tb: 75, median: 9.0, minus2SD: 7.0, plus1SD: 10.0 },
+  { tb: 76, median: 9.2, minus2SD: 7.2, plus1SD: 10.2 },
+  { tb: 77, median: 9.4, minus2SD: 7.3, plus1SD: 10.4 },
+  { tb: 78, median: 9.6, minus2SD: 7.4, plus1SD: 10.6 },
+  { tb: 79, median: 9.8, minus2SD: 7.5, plus1SD: 10.8 },
+  { tb: 80, median: 10.0, minus2SD: 7.6, plus1SD: 11.0 },
+  { tb: 81, median: 10.2, minus2SD: 7.8, plus1SD: 11.2 },
+  { tb: 82, median: 10.4, minus2SD: 7.9, plus1SD: 11.4 },
+  { tb: 83, median: 10.6, minus2SD: 8.0, plus1SD: 11.6 },
+  { tb: 84, median: 10.8, minus2SD: 8.1, plus1SD: 11.8 },
+  { tb: 85, median: 11.0, minus2SD: 8.2, plus1SD: 12.0 },
+  { tb: 86, median: 11.2, minus2SD: 8.3, plus1SD: 12.2 },
+  { tb: 87, median: 11.4, minus2SD: 8.5, plus1SD: 12.4 },
+  { tb: 88, median: 11.6, minus2SD: 8.6, plus1SD: 12.6 },
+  { tb: 89, median: 11.8, minus2SD: 8.7, plus1SD: 12.8 },
+  { tb: 90, median: 12.0, minus2SD: 8.8, plus1SD: 13.0 },
+  { tb: 91, median: 12.2, minus2SD: 9.0, plus1SD: 13.2 },
+  { tb: 92, median: 12.4, minus2SD: 9.1, plus1SD: 13.4 },
+  { tb: 93, median: 12.6, minus2SD: 9.2, plus1SD: 13.6 },
+  { tb: 94, median: 12.8, minus2SD: 9.3, plus1SD: 13.8 },
+  { tb: 95, median: 13.0, minus2SD: 9.4, plus1SD: 14.0 },
+  { tb: 96, median: 13.2, minus2SD: 9.6, plus1SD: 14.2 },
+  { tb: 97, median: 13.4, minus2SD: 9.7, plus1SD: 14.4 },
+  { tb: 98, median: 13.6, minus2SD: 9.8, plus1SD: 14.6 },
+  { tb: 99, median: 13.8, minus2SD: 9.9, plus1SD: 14.8 },
+  { tb: 100, median: 14.0, minus2SD: 10.0, plus1SD: 15.0 },
+  { tb: 101, median: 14.2, minus2SD: 10.2, plus1SD: 15.2 },
+  { tb: 102, median: 14.4, minus2SD: 10.3, plus1SD: 15.4 },
+  { tb: 103, median: 14.6, minus2SD: 10.4, plus1SD: 15.6 },
+  { tb: 104, median: 14.8, minus2SD: 10.5, plus1SD: 15.8 },
+  { tb: 105, median: 15.0, minus2SD: 10.6, plus1SD: 16.0 },
+  { tb: 106, median: 15.2, minus2SD: 10.8, plus1SD: 16.2 },
+  { tb: 107, median: 15.4, minus2SD: 10.9, plus1SD: 16.4 },
+  { tb: 108, median: 15.6, minus2SD: 11.0, plus1SD: 16.6 },
+  { tb: 109, median: 15.8, minus2SD: 11.1, plus1SD: 16.8 },
+  { tb: 110, median: 16.0, minus2SD: 11.2, plus1SD: 17.0 }
+];
+
+const dataBBTB_P = dataBBTB_L.map(row => ({
+  tb: row.tb,
+  median: row.median - 0.2,
+  minus2SD: row.minus2SD - 0.2,
+  plus1SD: row.plus1SD - 0.2
+}));
+      const data = jk === "perempuan" ? dataBBTB_P : dataBBTB_L;
+      const nearest = data.reduce((prev, curr) => Math.abs(curr.tb - tb) < Math.abs(prev.tb - tb) ? curr : prev);
+      const sdGap = nearest.median - nearest.minus2SD;
+      if (bb < nearest.minus2SD - sdGap) {
+        return { status: "Gizi Buruk", saran: "Perlu intervensi gizi dan pemeriksaan lanjutan." };
+      } else if (bb < nearest.minus2SD) {
+        return { status: "Gizi Kurang", saran: "Perbaiki pola makan dan konsultasi ke tenaga gizi." };
+      } else if (bb <= nearest.plus1SD) {
+        return { status: "Gizi Baik (Normal)", saran: "Pertahankan status gizi dan pantau rutin." };
+      } else {
+        return { status: "Risiko Gizi Lebih", saran: "Perhatikan asupan makan dan aktivitas fisik." };
+      }
+    }
+
+    function unduhPDF() {
+      const element = document.getElementById("output");
+      html2pdf().from(element).save("hasil-status-gizi.pdf");
+    }
   </script>
 </body>
 </html>
